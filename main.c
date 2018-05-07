@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 /*#include "listops.c"i*/
 /*TODO: Attribute */
 
@@ -33,8 +34,8 @@
 #define DICT_END	'%'
 
 typedef struct {
-    char name[NAME_LEN + 1];
-    int prob[3]; 
+    char *name;
+    int  prob[3]; 
 } word_t;
 
 typedef word_t dict_t[DICT_MAX];
@@ -45,56 +46,93 @@ typedef word_t dict_t[DICT_MAX];
 int getword(char W[], int limit);
 int isValid (char c);
 dict_t *generateDict(void);
+word_t *initWordT(void);
 
 
 /***********MAIN**********/
 int
 main(int argc, char *argv[]) {
+	word_t *word = initWordT();
+	word_t *word1 = initWordT();
+	word_t *word2 = initWordT();
+	word_t *word3 = initWordT();
+	printf("%s \n", word->name);
+
+	printf("%d ", word->prob[0]);
+	printf("%d ", word->prob[1]);
+	printf("%d \n", word->prob[2]);
+
+	printf("%s \n", word1->name);
+	printf("%s \n", word2->name);
+	printf("%s \n", word3->name);
+	/*
 	dict_t *dict = generateDict();
 	printf("%s \n", dict[0]->name);
-	printf("%s \n", dict[1]->name);
 	printf("%d \n", dict[0]->prob[0]);
 	printf("%d \n", dict[0]->prob[1]);
+	printf("%d \n", dict[0]->prob[2]);
+	printf("wowowowo");
+	printf("%s \n", dict[1]->name);
+	printf("%d \n", dict[1]->prob[0]);
+	printf("%d \n", dict[1]->prob[1]);
+	printf("%d \n", dict[1]->prob[2]);
+	*/
 	return 0;
+
 }
 
 
 dict_t 
 *generateDict(void){
+	/*TODO: make the generate word_t function*/
 	
 	char word[NAME_LEN]; 
 	int wordIndex = 0;
 	int dataInd = 0;	
 	dict_t *dict = (dict_t *)malloc(DICT_MAX * sizeof(word_t));
+	assert(dict);
 
 	while (getword(word, 30) != EOF) {
 		if (dataInd == 0) {
 			strcpy(dict[wordIndex]->name , word);
-		} else if (dataInd == 1) {
-			/*TODO Assign actual values*/
-			dict[wordIndex]->prob[0] = 0;
-			
-		} else if (dataInd == 2) {
-			dict[wordIndex]->prob[1] = 1;
+		}
+			/*TODO make this nice without hardcoding all of it*/	
+		dict[wordIndex]->prob[dataInd-1] = strtol(word, NULL, 10);
 
-		} else if (dataInd == 3) {
-			dict[wordIndex]->prob[2] = 2;
+		if (dataInd == 3) {
+		
+			dataInd = 0;
+			wordIndex++;
 
+		} else {
+			dataInd++;
 		}
 		
 
-		dataInd++;
-		wordIndex++;
 	}
 	return dict;
 
 }
 
-/*TODO*/	
-int
-strToInt(static char* num) {
-	int out;
+word_t
+*initWordT(void) {
+	word_t *output = malloc(sizeof(word_t));
+	assert(output);;
+	output->name = malloc((NAME_LEN+1) * sizeof(char));
+	assert(output->name);
+	output->name = "";
+	output->prob[0] = 0;
+
+	output->prob[1] = 0;
+	output->prob[2] = 0;
+
+	return output;
+
+
 }
+
+
+
 
 
 /* Extract a single word (including numbers) out of the standard input, of not
