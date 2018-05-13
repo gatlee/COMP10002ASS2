@@ -71,14 +71,14 @@ void fillDict(dictEntry_t dict[], int* dictLen) {
 	word_t currInpWord;
 	rawEntry_t rawEntry;
 	int rawEntryPos = 0;
-	int currEntry = 0;
-	while (getWord(currInpWord,NAME_MAX)!= EOF) {
+	int currEntry=0;
+	while (getWord(currInpWord,NAME_MAX)!= EOF &&  currInpWord[0] != DICT_END) {
 		strcpy(rawEntry[rawEntryPos], currInpWord);
 
 
 		if (rawEntryPos == 3) {
-
 			assignDictEntry(&(dict[currEntry]), rawEntry);
+
 			currEntry++;
 			rawEntryPos = 0;
 		} else {
@@ -111,15 +111,7 @@ void printEntry(rawEntry_t raw) {
 		printf("%s", raw[i]);
 	}
 }
-/*
-*void assignDictEntry(dictEntry_t *entry, char* name, int a, int b, int c) {
-*	strcpy(entry->name, name);
-*	(entry->prob)[0] = a;
-*	(entry->prob)[1] = b;
-*	(entry->prob)[2] = c;
-*
-*}
-*/
+
 void assignDictEntry(dictEntry_t *entry, rawEntry_t raw) {
 	strcpy(entry->name, raw[0]);
 	(entry->prob)[0] = atoi(raw[1]);
