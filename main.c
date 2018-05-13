@@ -50,6 +50,7 @@ int getWord(char W[], int limit);
 int isValid (char c);
 void assignDictEntry(dictEntry_t *entry, rawEntry_t raw);
 void fillDict(dictEntry_t dict[], int* dictLen);
+void printDict(dictEntry_t dict[], int* dictLen);
 void printEntry(rawEntry_t raw);
 
 
@@ -60,6 +61,7 @@ main(int argc, char *argv[]) {
 	int dictLen = 0;
 	
 	fillDict(dict, &dictLen);
+	printDict(dict, &dictLen);
 	/*SECTION1*/
 
 
@@ -81,6 +83,7 @@ void fillDict(dictEntry_t dict[], int* dictLen) {
 
 			currEntry++;
 			rawEntryPos = 0;
+			(*dictLen)++;
 		} else {
 			rawEntryPos++;
 		}
@@ -95,11 +98,14 @@ void fillDict(dictEntry_t dict[], int* dictLen) {
 		
 	}
 	*/
+
+}
+void printDict(dictEntry_t dict[], int* dictLen) {
 	int i;
 
-	for (i=0; i<2;i++) {
+	for (i=0; i<*dictLen;i++) {
 		printf("%d %s %d %d %d\n",  i, (dict[i]).name,
-			  (dict[i]).prob[0],(dict[i]).prob[1], (dict[i]).prob[2]);
+		      (dict[i]).prob[0],(dict[i]).prob[1], (dict[i]).prob[2]);
 		
 	}
 
