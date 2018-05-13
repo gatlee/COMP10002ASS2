@@ -29,78 +29,82 @@
 #define FN_IND      0
 #define LN_IND      1
 #define NN_IND      2
-#define NAME_LEN    30
+#define NAME_MAX	30
 #define DICT_MAX	100
 #define DICT_END	'%'
+#define NUM_PARAM	4
+
+typedef char word_t[NAME_MAX];
 
 typedef struct {
-    char *name;
+    word_t name;
     int  prob[3]; 
-} word_t;
+} dictEntry_t;
 
-typedef word_t dict_t[DICT_MAX];
+typedef word_t rawEntry[NUM_PARAM];
 
 
 /* function declarations */
 
-int getword(char W[], int limit);
+int getWord(char W[], int limit);
 int isValid (char c);
-dict_t *generateDict(void);
-word_t *initWordT(void);
+void assignDictEntry(dictEntry_t *entry, char* name, int a, int b, int c);
+void fillDict(dictEntry_t dict[]);
 
 
 /***********MAIN**********/
 int
 main(int argc, char *argv[]) {
-	word_t *word = initWordT();
-	word_t *word1 = initWordT();
-	word_t *word2 = initWordT();
-	word_t *word3 = initWordT();
-	printf("%s \n", word->name);
+	dictEntry_t dict[DICT_MAX];
+	
+	fillDict(dict);
+	/*SECTION1*/
 
-	printf("%d ", word->prob[0]);
-	printf("%d ", word->prob[1]);
-	printf("%d \n", word->prob[2]);
 
-	printf("%s \n", word1->name);
-	printf("%s \n", word2->name);
-	printf("%s \n", word3->name);
-	/*
-	dict_t *dict = generateDict();
-	printf("%s \n", dict[0]->name);
-	printf("%d \n", dict[0]->prob[0]);
-	printf("%d \n", dict[0]->prob[1]);
-	printf("%d \n", dict[0]->prob[2]);
-	printf("wowowowo");
-	printf("%s \n", dict[1]->name);
-	printf("%d \n", dict[1]->prob[0]);
-	printf("%d \n", dict[1]->prob[1]);
-	printf("%d \n", dict[1]->prob[2]);
-	*/
 	return 0;
 
 }
 
+void fillDict(dictEntry_t dict[]) {
+	int i;
+	for (i=0; i<DICT_MAX;i++) {
+		assignDictEntry(&(dict[i]), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 0, 1, 2);
+		
+	}
 
-dict_t 
+	for (i=0; i<DICT_MAX;i++) {
+		printf("%d %s %d %d %d\n",  i, (dict[0]).name,
+			  (dict[0]).prob[0],(dict[0]).prob[1], (dict[0]).prob[2]);
+		
+	}
+
+}
+
+void assignDictEntry(dictEntry_t *entry, char* name, int a, int b, int c) {
+	strcpy(entry->name, name);
+	(entry->prob)[0] = a;
+	(entry->prob)[1] = b;
+	(entry->prob)[2] = c;
+
+}
+
+/*
 *generateDict(void){
-	/*TODO: make the generate word_t function*/
+
 	
 	char word[NAME_LEN]; 
 	int wordIndex = 0;
 	int dataInd = 0;	
-	dict_t *dict = (dict_t *)malloc(DICT_MAX * sizeof(word_t));
-	assert(dict);
 
 	while (getword(word, 30) != EOF) {
 		if (dataInd == 0) {
-			strcpy(dict[wordIndex]->name , word);
+			;
+			//Assignword
 		}
-			/*TODO make this nice without hardcoding all of it*/	
-		dict[wordIndex]->prob[dataInd-1] = strtol(word, NULL, 10);
 
+		//Assign nums
 		if (dataInd == 3) {
-		
+			//Reset	
 			dataInd = 0;
 			wordIndex++;
 
@@ -113,23 +117,8 @@ dict_t
 	return dict;
 
 }
+*/
 
-word_t
-*initWordT(void) {
-	word_t *output = malloc(sizeof(word_t));
-	assert(output);;
-	output->name = malloc((NAME_LEN+1) * sizeof(char));
-	assert(output->name);
-	output->name = "";
-	output->prob[0] = 0;
-
-	output->prob[1] = 0;
-	output->prob[2] = 0;
-
-	return output;
-
-
-}
 
 
 
@@ -144,7 +133,7 @@ word_t
 */
 
 int
-getword(char W[], int limit) {
+getWord(char W[], int limit) {
 	int c, len=0;
 	/* first, skip over any non alphanumerics */
 	while ((c=getchar())!=EOF && (!isValid(c))) {
@@ -164,7 +153,9 @@ getword(char W[], int limit) {
 	return 0;
 }
 
-/* Returns true if alphanumeric or DICT_END */
+/* Returns true if alphanumeric or DICT_END
+ * Ignores # because not needed
+ */
 int
 isValid (char c) {
 	return ((c <= '9' && c >= '0') || (c == DICT_END) || isalpha(c));
