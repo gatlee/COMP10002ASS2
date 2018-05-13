@@ -41,23 +41,25 @@ typedef struct {
     int  prob[3]; 
 } dictEntry_t;
 
-typedef word_t rawEntry[NUM_PARAM];
+typedef word_t rawEntry_t[NUM_PARAM];
 
 
 /* function declarations */
 
 int getWord(char W[], int limit);
 int isValid (char c);
-void assignDictEntry(dictEntry_t *entry, char* name, int a, int b, int c);
-void fillDict(dictEntry_t dict[]);
+void assignDictEntry(dictEntry_t *entry, rawEntry_t raw);
+void fillDict(dictEntry_t dict[], int* dictLen);
+void printEntry(rawEntry_t raw);
 
 
 /***********MAIN**********/
 int
 main(int argc, char *argv[]) {
 	dictEntry_t dict[DICT_MAX];
+	int dictLen = 0;
 	
-	fillDict(dict);
+	fillDict(dict, &dictLen);
 	/*SECTION1*/
 
 
@@ -65,30 +67,69 @@ main(int argc, char *argv[]) {
 
 }
 
-void fillDict(dictEntry_t dict[]) {
+void fillDict(dictEntry_t dict[], int* dictLen) {
+	word_t currInpWord;
+	rawEntry_t rawEntry;
+	int rawEntryPos = 0;
+	int currEntry = 0;
+	while (getWord(currInpWord,NAME_MAX)!= EOF) {
+		strcpy(rawEntry[rawEntryPos], currInpWord);
+
+
+		if (rawEntryPos == 3) {
+
+			assignDictEntry(&(dict[currEntry]), rawEntry);
+			currEntry++;
+			rawEntryPos = 0;
+		} else {
+			rawEntryPos++;
+		}
+
+		 
+
+	}
+	/*
 	int i;
 	for (i=0; i<DICT_MAX;i++) {
 		assignDictEntry(&(dict[i]), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 0, 1, 2);
 		
 	}
+	*/
+	int i;
 
-	for (i=0; i<DICT_MAX;i++) {
-		printf("%d %s %d %d %d\n",  i, (dict[0]).name,
-			  (dict[0]).prob[0],(dict[0]).prob[1], (dict[0]).prob[2]);
+	for (i=0; i<2;i++) {
+		printf("%d %s %d %d %d\n",  i, (dict[i]).name,
+			  (dict[i]).prob[0],(dict[i]).prob[1], (dict[i]).prob[2]);
 		
 	}
 
 }
 
-void assignDictEntry(dictEntry_t *entry, char* name, int a, int b, int c) {
-	strcpy(entry->name, name);
-	(entry->prob)[0] = a;
-	(entry->prob)[1] = b;
-	(entry->prob)[2] = c;
-
+void printEntry(rawEntry_t raw) {
+	int i;
+	for (i=0; i<4; i++) {
+		printf("%s", raw[i]);
+	}
 }
+/*
+*void assignDictEntry(dictEntry_t *entry, char* name, int a, int b, int c) {
+*	strcpy(entry->name, name);
+*	(entry->prob)[0] = a;
+*	(entry->prob)[1] = b;
+*	(entry->prob)[2] = c;
+*
+*}
+*/
+void assignDictEntry(dictEntry_t *entry, rawEntry_t raw) {
+	strcpy(entry->name, raw[0]);
+	(entry->prob)[0] = atoi(raw[1]);
+	(entry->prob)[1] = atoi(raw[2]);
+	(entry->prob)[2] = atoi(raw[3]);
+} 
+
 
 /*
+
 *generateDict(void){
 
 	
