@@ -1,6 +1,6 @@
 /* COMP10002 Assessment 2
  * By Gatlee Kaw (994017) created 2018-05-01, Last modified 2018-05-06
- * Project which identifies and labels a sentence with first_name or 
+ * Project which identifies and labels a sentence with first_name or
  * last_name based on data in given dictionary
 */
 
@@ -11,7 +11,7 @@
    Custom Books, Sydney, Australia, 2002; revised edition 2012,
    ISBN 9781486010974.
 
-   
+
    See http://people.eng.unimelb.edu.au/ammoffat/ppsaa/ for further
    information.
 
@@ -24,7 +24,6 @@
 #include <ctype.h>
 #include <assert.h>
 /*#include "listops.c"i*/
-/*TODO: Attribute */
 
 #define FN_IND      0
 #define LN_IND      1
@@ -37,8 +36,8 @@
 typedef char word_t[NAME_MAX];
 
 typedef struct {
-    word_t name;
-    int  prob[3]; 
+	word_t name;
+    int  prob[3];
 } dictEntry_t;
 
 typedef word_t rawEntry_t[NUM_PARAM];
@@ -50,25 +49,39 @@ int getWord(char W[], int limit);
 int isValid (char c);
 void assignDictEntry(dictEntry_t *entry, rawEntry_t raw);
 void fillDict(dictEntry_t dict[], int* dictLen);
-void printDict(dictEntry_t dict[], int* dictLen);
-void printEntry(rawEntry_t raw);
+void printDictAll(dictEntry_t dict[], int* dictLen);
+void printDictOne(dictEntry_t dict[]);
+void printStage(int num);
 
+
+/*Debug function*/
+void printEntry(rawEntry_t raw);
 
 /***********MAIN**********/
 int
 main(int argc, char *argv[]) {
 	dictEntry_t dict[DICT_MAX];
 	int dictLen = 0;
-	
 	fillDict(dict, &dictLen);
-	printDict(dict, &dictLen);
-	/*SECTION1*/
 
+	/*STAGE 1 */
+	printStage(1);
+	printDictOne(dict);
+
+	/*TODO:STAGE 2 */
 
 	return 0;
 
 }
 
+/*Prints Stage Output*/
+void printStage(int num) {
+
+	char numC = num+'0';
+	printf("=========================Stage %c=========================", numC);
+
+
+}
 void fillDict(dictEntry_t dict[], int* dictLen) {
 	word_t currInpWord;
 	rawEntry_t rawEntry;
@@ -95,24 +108,30 @@ void fillDict(dictEntry_t dict[], int* dictLen) {
 	int i;
 	for (i=0; i<DICT_MAX;i++) {
 		assignDictEntry(&(dict[i]), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 0, 1, 2);
-		
+
 	}
 	*/
 
 }
-void printDict(dictEntry_t dict[], int* dictLen) {
+void printDictAll(dictEntry_t dict[], int* dictLen) {
 	int i;
 
 	for (i=0; i<*dictLen;i++) {
-		printf("%d %s %d %d %d\n",  i, (dict[i]).name,
+		printf("Name %d: %s\n",  i, (dict[i]).name);
+		printf("Label Probabilities: %d%% %d%% %d%%\n", 
 		      (dict[i]).prob[0],(dict[i]).prob[1], (dict[i]).prob[2]);
-		
+
 	}
 
 }
 
+void printDictOne(dictEntry_t dict[]) {
+	int one = 1;
+	printDictAll(dict, &one);
+}
+
 void printEntry(rawEntry_t raw) {
-	int i;
+  int i;
 	for (i=0; i<4; i++) {
 		printf("%s", raw[i]);
 	}
@@ -123,17 +142,17 @@ void assignDictEntry(dictEntry_t *entry, rawEntry_t raw) {
 	(entry->prob)[0] = atoi(raw[1]);
 	(entry->prob)[1] = atoi(raw[2]);
 	(entry->prob)[2] = atoi(raw[3]);
-} 
+}
 
 
 /*
 
 *generateDict(void){
 
-	
-	char word[NAME_LEN]; 
+
+	char word[NAME_LEN];
 	int wordIndex = 0;
-	int dataInd = 0;	
+	int dataInd = 0;
 
 	while (getword(word, 30) != EOF) {
 		if (dataInd == 0) {
@@ -143,14 +162,14 @@ void assignDictEntry(dictEntry_t *entry, rawEntry_t raw) {
 
 		//Assign nums
 		if (dataInd == 3) {
-			//Reset	
+			//Reset
 			dataInd = 0;
 			wordIndex++;
 
 		} else {
 			dataInd++;
 		}
-		
+
 
 	}
 	return dict;
@@ -165,7 +184,7 @@ void assignDictEntry(dictEntry_t *entry, rawEntry_t raw) {
 
 /* Extract a single word (including numbers) out of the standard input, of not
    more than limit characters. Argument array W must be
-   limit+1 characters or bigger. 
+   limit+1 characters or bigger.
    Credit: Alistair Moffat (See top of file for additional info)
    Modified by Gatlee Kaw (accepts words comprising of digits)
 
@@ -192,7 +211,7 @@ getWord(char W[], int limit) {
 	return 0;
 }
 
-/* Returns true if alphanumeric or DICT_END
+/* Returns true if alphanumeric or DICT_END ('%')
  * Ignores # because not needed
  */
 int
