@@ -52,7 +52,8 @@ void fillDict(dictEntry_t dict[], int* dictLen);
 void printDictAll(dictEntry_t dict[], int* dictLen);
 void printDictOne(dictEntry_t dict[]);
 void printStage(int num);
-
+int wordLen(word_t word);
+double avWordLens(dictEntry_t dict[], int dict_len);
 
 /*Debug function*/
 void printEntry(rawEntry_t raw);
@@ -60,6 +61,7 @@ void printEntry(rawEntry_t raw);
 /***********MAIN**********/
 int
 main(int argc, char *argv[]) {
+	
 	dictEntry_t dict[DICT_MAX];
 	int dictLen = 0;
 	fillDict(dict, &dictLen);
@@ -69,16 +71,32 @@ main(int argc, char *argv[]) {
 	printDictOne(dict);
 
 	/*TODO:STAGE 2 */
+	printStage(2);
+	printf("Number of names: %d\n", dictLen);
+	printf("Average length: %.2f \n", avWordLens(dict, dictLen));
+
 
 	return 0;
 
+}
+
+double avWordLens(dictEntry_t dict[], int dict_len) {
+	int i = 0;
+	double total = 0.0;
+	for (i=0; i<dict_len; i++) {
+		total += wordLen(dict[i].name);
+
+		
+	}
+	return total/dict_len;
+			
 }
 
 /*Prints Stage Output*/
 void printStage(int num) {
 
 	char numC = num+'0';
-	printf("=========================Stage %c=========================", numC);
+	printf("=========================Stage %c=========================\n", numC);
 
 
 }
@@ -101,7 +119,6 @@ void fillDict(dictEntry_t dict[], int* dictLen) {
 			rawEntryPos++;
 		}
 
-		 
 
 	}
 	/*
@@ -142,6 +159,16 @@ void assignDictEntry(dictEntry_t *entry, rawEntry_t raw) {
 	(entry->prob)[0] = atoi(raw[1]);
 	(entry->prob)[1] = atoi(raw[2]);
 	(entry->prob)[2] = atoi(raw[3]);
+}
+
+int wordLen(word_t word) {
+	int total = 0;
+	while (*word) {
+		total++;
+		word++;
+
+	}
+	return total;
 }
 
 
