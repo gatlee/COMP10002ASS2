@@ -76,6 +76,7 @@ void printDictOne(dictEntry_t dict[]);
 void printStage(int num);
 int wordLen(word_t word);
 double avWordLens(dictEntry_t dict[], int dict_len);
+void printList(list_t *list);
 
 /*listops*/
 list_t *genSentenceList(void);
@@ -106,7 +107,12 @@ main(int argc, char *argv[]) {
 
 	/*STAGE 3 */
 	printStage(3);
-	genSentenceList();
+	list_t *sentence = genSentenceList();
+	printList(sentence);
+	
+	/*STAGE 4 */
+	printStage(4);
+	
 
 	
 
@@ -114,6 +120,16 @@ main(int argc, char *argv[]) {
 	return 0;
 
 }
+void printList(list_t *list) {
+
+	node_t *current = list->head;
+	while (current) {
+		printf("%s\n", current->data);
+		current = current->next;
+	}
+
+}
+
 list_t 
 *genSentenceList(void) {
 	list_t *sentence;
@@ -125,12 +141,6 @@ list_t
 		sentence = insert_at_foot(sentence, inpWord);
 	}
 
-	/*prints struct contents out*/
-	node_t *current = sentence->head;
-	while (current) {
-		printf("%s\n", current->data);
-		current = current->next;
-	}
 	return sentence;
 	
 }
