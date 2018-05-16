@@ -44,6 +44,27 @@ typedef struct {
 typedef word_t rawEntry_t[NUM_PARAM];
 
 
+/* List ops Program(s) written by Alistair Moffat
+ * Additional information at top of document
+ */
+
+typedef struct node node_t;
+typedef word_t data_t;
+struct node {
+	data_t data;
+	node_t *next;
+};
+
+typedef struct {
+	node_t *head;
+	node_t *foot;
+} list_t;
+
+
+
+
+
+
 /* function declarations */
 
 int getWord(char W[], int limit);
@@ -55,7 +76,12 @@ void printDictOne(dictEntry_t dict[]);
 void printStage(int num);
 int wordLen(word_t word);
 double avWordLens(dictEntry_t dict[], int dict_len);
-void genSentenceList(void);
+
+/*listops*/
+list_t *genSentenceList(void);
+list_t *make_empty_list(void);
+list_t *insert_at_foot(list_t *list, data_t value);
+void free_list(list_t *list);
 
 /*Debug function*/
 void printEntry(rawEntry_t raw);
@@ -88,11 +114,77 @@ main(int argc, char *argv[]) {
 	return 0;
 
 }
-void genSentenceList(void) {
+list_t 
+*genSentenceList(void) {
+	list_t *sentence;
+	sentence = make_empty_list();
+
 	word_t inpWord;
+
 	while (getWord(inpWord, NAME_MAX) != EOF) {
-		printf("%s\n", inpWord);
+		sentence = insert_at_foot(sentence, inpWord);
 	}
+
+	/*prints struct contents out*/
+	node_t *current = sentence->head;
+	while (current) {
+		printf("%s\n", current->data);
+		current = current->next;
+	}
+	return sentence;
+	
+}
+
+/* frees list 
+ * Credits: Alistair Moffat
+ *
+ */
+void
+free_list(list_t *list) {
+	node_t *curr, *prev;
+	assert(list!=NULL);
+	curr = list->head;
+	while (curr) {
+		prev = curr;
+		curr = curr->next;
+		free(prev);
+	}
+	free(list);
+}
+
+/* inserts item at foot at list
+ * Credits: Alistair Moffat
+ *
+ */
+list_t
+*insert_at_foot(list_t *list, data_t value) {
+	node_t *new;
+	new = (node_t*)malloc(sizeof(*new));
+	assert(list!=NULL && new!=NULL);
+	strcpy(new->data, value);
+
+	new->next = NULL;
+	if (list->foot==NULL) {
+		/* this is the first insertion into the list */
+		list->head = list->foot = new;
+	} else {
+		list->foot->next = new;
+		list->foot = new;
+	}
+	return list;
+}
+
+/* makes empty list 
+ * Credits: Alistair Moffat
+ *
+ */
+list_t
+*make_empty_list(void) {
+	list_t *list;
+	list = (list_t*)malloc(sizeof(*list));
+	assert(list!=NULL);
+	list->head = list->foot = NULL;
+	return list;
 }
 
 double avWordLens(dictEntry_t dict[], int dict_len) {
