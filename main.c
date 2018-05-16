@@ -2,6 +2,7 @@
  * By Gatlee Kaw (994017) created 2018-05-01, Last modified 2018-05-06
  * Project which identifies and labels a sentence with first_name or
  * last_name based on data in given dictionary
+ * Algorithms are fun!
 */
 
 /* Additional Credit:
@@ -54,6 +55,7 @@ void printDictOne(dictEntry_t dict[]);
 void printStage(int num);
 int wordLen(word_t word);
 double avWordLens(dictEntry_t dict[], int dict_len);
+void genSentenceList(void);
 
 /*Debug function*/
 void printEntry(rawEntry_t raw);
@@ -69,15 +71,28 @@ main(int argc, char *argv[]) {
 	/*STAGE 1 */
 	printStage(1);
 	printDictOne(dict);
+	
 
-	/*TODO:STAGE 2 */
+	/*STAGE 2 */
 	printStage(2);
 	printf("Number of names: %d\n", dictLen);
-	printf("Average length: %.2f \n", avWordLens(dict, dictLen));
+	printf("Average length: %.2f \n\n", avWordLens(dict, dictLen));
+
+	/*STAGE 3 */
+	printStage(3);
+	genSentenceList();
+
+	
 
 
 	return 0;
 
+}
+void genSentenceList(void) {
+	word_t inpWord;
+	while (getWord(inpWord, NAME_MAX) != EOF) {
+		printf("%s\n", inpWord);
+	}
 }
 
 double avWordLens(dictEntry_t dict[], int dict_len) {
@@ -145,6 +160,7 @@ void printDictAll(dictEntry_t dict[], int* dictLen) {
 void printDictOne(dictEntry_t dict[]) {
 	int one = 1;
 	printDictAll(dict, &one);
+	printf("\n");
 }
 
 void printEntry(rawEntry_t raw) {
