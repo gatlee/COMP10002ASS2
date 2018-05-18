@@ -78,9 +78,10 @@ int wordLen(word_t word);
 double avWordLens(dictEntry_t dict[], int dict_len);
 void printList(list_t *list);
 int compWords(const void* a, const void* b);
+void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence);
 
 /*listops*/
-list_t *genSentenceList(void);
+list_t *genSentenceList();
 list_t *make_empty_list(void);
 list_t *insert_at_foot(list_t *list, data_t value);
 void free_list(list_t *list);
@@ -92,8 +93,8 @@ void printEntry(rawEntry_t raw);
 int
 main(int argc, char *argv[]) {
 	dictEntry_t dict[DICT_MAX];
-	int dictLen = 0;
-	fillDict(dict, &dictLen);
+	int dictSize = 0;
+	fillDict(dict, &dictSize);
 
 	/*STAGE 1 */
 	printStage(1);
@@ -102,18 +103,19 @@ main(int argc, char *argv[]) {
 
 	/*STAGE 2 */
 	printStage(2);
-	printf("Number of names: %d\n", dictLen);
-	printf("Average length: %.2f \n\n", avWordLens(dict, dictLen));
+	printf("Number of names: %d\n", dictSize);
+	printf("Average length: %.2f \n\n", avWordLens(dict, dictSize));
 
 	/*STAGE 3 */
 	printStage(3);
+	int sentLen;
 	list_t *sentence = genSentenceList();
 	printList(sentence);
 
 	/*STAGE 4 */
 	printStage(4);
 	printf("%d", compWords(sentence->head, sentence->head->next));
-
+	printPossible(dict, dictSize, sentence);
 
 
 
@@ -128,17 +130,21 @@ main(int argc, char *argv[]) {
  * zero
  * TODO: pass through sentence length
  * */
-void printPossible(dictEntry_t dict [], list_t *sentence) {
+void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence) {
 	node_t *current = sentence->head;
+	node_t *target;
 	int first = 1;
 	char *probStrings[3] = {"FIRST_NAME", "LAST_NAME", "NOT_NAME"};
 		
 
 	while (current) {
 
-		printf("%s", current->data);
-		/*TODO: Fix this*/
-	    //	target = bsearch((void*)current, void dict, size_t nitems, size_t size, int (*compar)(const void *, const void *))
+		//printf("%s", current->data);
+		//		printf("sizeof(current) = %d", sizeof(node_t));
+		target = bsearch((void*)current, dict, dictSize, sizeof(dictEntry_t), compWords);
+		if (target!=NULL) {
+			printf("%s", target->data);
+		}
 
 		current = current->next;
 	}
@@ -154,9 +160,7 @@ void printPossible(dictEntry_t dict [], list_t *sentence) {
  * */
 int compWords(const void* a, const void* b) {
 	node_t*  aNode = (node_t*) a;
-	printf("%s", aNode->data);
 	node_t*  bNode = (node_t*) b;
-	printf("%s", bNode->data);
 	
 	return strcmp(aNode->data , bNode->data);
 }
@@ -174,7 +178,7 @@ void printList(list_t *list) {
 }
 
 list_t
-*genSentenceList(void) {
+*genSentenceList() {
 	list_t *sentence;
 	sentence = make_empty_list();
 
@@ -185,6 +189,9 @@ list_t
 		length++;
 		/*TODO: make a legnth function*/
 	}
+
+	
+
 
 	return sentence;
 
