@@ -33,16 +33,16 @@
 #define DICT_MAX	100
 #define DICT_END	'%'
 #define NUM_PARAM	4
+#define NUM_PROBS	3
 
 typedef char word_t[NAME_MAX];
 
 typedef struct {
 	word_t name;
-    int  prob[3];
+	int  prob[NUM_PROBS];
 } dictEntry_t;
 
 typedef word_t rawEntry_t[NUM_PARAM];
-
 
 /* List ops Program(s) written by Alistair Moffat
  * Additional information at top of document
@@ -65,7 +65,7 @@ typedef struct {
 
 
 
-/* function declarations */
+/*function declarations */
 
 int getWord(char W[], int limit);
 int isValid (char c);
@@ -77,6 +77,7 @@ void printStage(int num);
 int wordLen(word_t word);
 double avWordLens(dictEntry_t dict[], int dict_len);
 void printList(list_t *list);
+int compWords(const void* a, const void* b);
 
 /*listops*/
 list_t *genSentenceList(void);
@@ -90,7 +91,6 @@ void printEntry(rawEntry_t raw);
 /***********MAIN**********/
 int
 main(int argc, char *argv[]) {
-	
 	dictEntry_t dict[DICT_MAX];
 	int dictLen = 0;
 	fillDict(dict, &dictLen);
@@ -98,7 +98,7 @@ main(int argc, char *argv[]) {
 	/*STAGE 1 */
 	printStage(1);
 	printDictOne(dict);
-	
+
 
 	/*STAGE 2 */
 	printStage(2);
@@ -109,17 +109,60 @@ main(int argc, char *argv[]) {
 	printStage(3);
 	list_t *sentence = genSentenceList();
 	printList(sentence);
-	
+
 	/*STAGE 4 */
 	printStage(4);
-	
+	printf("%d", compWords(sentence->head, sentence->head->next));
 
-	
+
+
+
+
 
 
 	return 0;
 
 }
+
+/* assigns either FIRST_NAME LAST_NAME or NOT_NAME based whether value is non
+ * zero
+ * TODO: pass through sentence length
+ * */
+void printPossible(dictEntry_t dict [], list_t *sentence) {
+	node_t *current = sentence->head;
+	int first = 1;
+	char *probStrings[3] = {"FIRST_NAME", "LAST_NAME", "NOT_NAME"};
+		
+
+	while (current) {
+
+		printf("%s", current->data);
+		/*TODO: Fix this*/
+	    //	target = bsearch((void*)current, void dict, size_t nitems, size_t size, int (*compar)(const void *, const void *))
+
+		current = current->next;
+	}
+	/*read from sentence in a looop*/
+		/*search for each sentence in dict*/
+		/**/
+
+
+}
+
+/* given two node funcitons
+ * returns -ve if a < b, 0 if a = b, and +ve if a > b
+ * */
+int compWords(const void* a, const void* b) {
+	node_t*  aNode = (node_t*) a;
+	printf("%s", aNode->data);
+	node_t*  bNode = (node_t*) b;
+	printf("%s", bNode->data);
+	
+	return strcmp(aNode->data , bNode->data);
+}
+
+
+
 void printList(list_t *list) {
 
 	node_t *current = list->head;
@@ -130,22 +173,24 @@ void printList(list_t *list) {
 
 }
 
-list_t 
+list_t
 *genSentenceList(void) {
 	list_t *sentence;
 	sentence = make_empty_list();
 
 	word_t inpWord;
-
+	int length = 0;
 	while (getWord(inpWord, NAME_MAX) != EOF) {
 		sentence = insert_at_foot(sentence, inpWord);
+		length++;
+		/*TODO: make a legnth function*/
 	}
 
 	return sentence;
-	
+
 }
 
-/* frees list 
+/* frees list
  * Credits: Alistair Moffat
  *
  */
@@ -184,7 +229,7 @@ list_t
 	return list;
 }
 
-/* makes empty list 
+/* makes empty list
  * Credits: Alistair Moffat
  *
  */
@@ -203,10 +248,10 @@ double avWordLens(dictEntry_t dict[], int dict_len) {
 	for (i=0; i<dict_len; i++) {
 		total += wordLen(dict[i].name);
 
-		
+
 	}
 	return total/dict_len;
-			
+
 }
 
 /*Prints Stage Output*/
@@ -252,9 +297,8 @@ void printDictAll(dictEntry_t dict[], int* dictLen) {
 
 	for (i=0; i<*dictLen;i++) {
 		printf("Name %d: %s\n",  i, (dict[i]).name);
-		printf("Label Probabilities: %d%% %d%% %d%%\n", 
-		      (dict[i]).prob[0],(dict[i]).prob[1], (dict[i]).prob[2]);
-
+		printf("Label Probabilities: %d%% %d%% %d%%\n",
+                (dict[i]).prob[0],(dict[i]).prob[1], (dict[i]).prob[2]);
 	}
 
 }
@@ -288,40 +332,6 @@ int wordLen(word_t word) {
 	}
 	return total;
 }
-
-
-/*
-
-*generateDict(void){
-
-
-	char word[NAME_LEN];
-	int wordIndex = 0;
-	int dataInd = 0;
-
-	while (getword(word, 30) != EOF) {
-		if (dataInd == 0) {
-			;
-			//Assignword
-		}
-
-		//Assign nums
-		if (dataInd == 3) {
-			//Reset
-			dataInd = 0;
-			wordIndex++;
-
-		} else {
-			dataInd++;
-		}
-
-
-	}
-	return dict;
-
-}
-*/
-
 
 
 
