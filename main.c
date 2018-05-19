@@ -79,6 +79,7 @@ double avWordLens(dictEntry_t dict[], int dict_len);
 void printList(list_t *list);
 int compWords(const void* a, const void* b);
 void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence);
+void printNameDes(dictEntry_t *target);
 
 /*listops*/
 list_t *genSentenceList();
@@ -108,13 +109,11 @@ main(int argc, char *argv[]) {
 
 	/*STAGE 3 */
 	printStage(3);
-	int sentLen;
 	list_t *sentence = genSentenceList();
 	printList(sentence);
 
 	/*STAGE 4 */
 	printStage(4);
-	printf("%d", compWords(sentence->head, sentence->head->next));
 	printPossible(dict, dictSize, sentence);
 
 
@@ -132,28 +131,67 @@ main(int argc, char *argv[]) {
  * */
 void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence) {
 	node_t *current = sentence->head;
-	node_t *target;
-	int first = 1;
-	char *probStrings[3] = {"FIRST_NAME", "LAST_NAME", "NOT_NAME"};
+	dictEntry_t *target;
 		
 
 	while (current) {
 
-		//printf("%s", current->data);
-		//		printf("sizeof(current) = %d", sizeof(node_t));
-		target = bsearch((void*)current, dict, dictSize, sizeof(dictEntry_t), compWords);
-		if (target!=NULL) {
-			printf("%s", target->data);
-		}
+		printf("%-10s", current->data);
+		/*assign target to pointer to corresponding dictEntry_t */
+		target = bsearch((void*)current, dict, dictSize, sizeof(dictEntry_t), 
+				         compWords);
+
+		printNameDes(target);
+		printf("\n");
 
 		current = current->next;
 	}
-	/*read from sentence in a looop*/
-		/*search for each sentence in dict*/
-		/**/
-
 
 }
+
+
+/* given a dict entry, print out all non zero percentage chance NAME values
+ * ie. FIRST_NAME, LAST_NAME for a dictEntry_t with prob array [50, 50, 0]
+ * */
+void 
+printNameDes(dictEntry_t *target) {
+
+	int i;
+	int first = 1;
+	int printLast = 1;
+	char *probStrings[3] = {"FIRST_NAME", "LAST_NAME", "NOT_NAME"};
+
+	if (target==NULL) {
+		printf("%s", probStrings[2]);
+		return;
+	}
+
+
+	for (i=0; i<NUM_PROBS; i++) {
+		if (target->prob[i] ) {
+			/*first item has different formatting*/
+			/*TODO: Kinda janky looking?*/
+			if (i != NUM_PROBS -1 || printLast) {
+				if (first) {
+					printf("%s", probStrings[i]);
+					first = 0;
+				}
+				else {
+					printf(", %s", probStrings[i]);
+
+				}
+				printLast = 0;
+			}
+		}
+	}
+
+}
+
+
+
+
+
+
 
 /* given two node funcitons
  * returns -ve if a < b, 0 if a = b, and +ve if a > b
