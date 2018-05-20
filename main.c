@@ -90,6 +90,7 @@ int compWords(const void* a, const void* b);
 void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence);
 void printNameDes(sentEnt_t *target);
 void assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence);
+void zeroUnlikely(list_t *sentence);
 
 /*prob operations */
 
@@ -120,7 +121,8 @@ main(int argc, char *argv[]) {
 	/*STAGE 2 */
 	printStage(2);
 	printf("Number of names: %d\n", dictSize);
-	printf("Average length: %.2f \n\n", avWordLens(dict, dictSize));
+	printf("Average number of characters per name: %.2f \n\n", 
+			avWordLens(dict, dictSize));
 
 	/*STAGE 3 */
 	printStage(3);
@@ -132,12 +134,51 @@ main(int argc, char *argv[]) {
 	assignProbsToSent(dict, dictSize, sentence);
 
 	printPossible(dict, dictSize, sentence);
+	printf("\n");
 
 	/*STAGE 5 */
 	printStage(5);
 
+	zeroUnlikely(sentence);
+	printPossible(dict, dictSize, sentence);
+
 
 	return 0;
+
+}
+
+
+/*given a sentence, set all probList array values to 0 except for largest
+ * value in list*/
+void zeroUnlikely(list_t *sentence) {
+
+
+	sentEnt_t *current = sentence->head;
+	/*init search values*/
+	int currHi=0;
+	int i;
+	int currHiInd = 0;
+
+	/*for every entry in sentence set all probs to 0 except for the highest 
+	 *valued one */
+
+	while (current) {
+		/*sets currHiInd to highest valued probability in problist*/
+		currHi=0;
+		for (i=0; i< NUM_PROBS; i++) {
+			if ((current->prob)[i] > currHi) {
+				currHi = (current->prob)[i];
+				currHiInd = i;
+			}
+		}
+
+		for (i=0; i< NUM_PROBS; i++) {
+			if (i!= currHiInd) {
+				(current->prob)[i] = 0;
+			} 
+		}
+		current = current->next;
+	}
 
 }
 
@@ -200,7 +241,6 @@ void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence) {
 
 		current = current->next;
 	}
-	printf("\n");
 
 }
 
@@ -270,6 +310,7 @@ void printList(list_t *list) {
 		printf("%s\n", current->data);
 		current = current->next;
 	}
+	printf("\n");
 
 }
 
@@ -400,7 +441,7 @@ void printDictAll(dictEntry_t dict[], int* dictLen) {
 
 	for (i=0; i<*dictLen;i++) {
 		printf("Name %d: %s\n",  i, (dict[i]).name);
-		printf("Label Probabilities: %d%% %d%% %d%%\n",
+		printf("Label probabilities: %d%% %d%% %d%%\n",
                 (dict[i]).prob[0],(dict[i]).prob[1], (dict[i]).prob[2]);
 	}
 
