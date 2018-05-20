@@ -34,7 +34,13 @@
 #define DICT_END	'%'
 #define NUM_PARAM	4
 #define NUM_PROBS	3
+#define PROB_STR	
 
+#define FN_STR		"FIRST_NAME" 	
+#define LN_STR		"LAST_NAME" 	
+#define NN_STR		"NOT_NAME" 	
+
+	
 typedef char word_t[NAME_MAX];
 
 typedef int probList_t[NUM_PROBS];
@@ -87,7 +93,7 @@ int wordLen(word_t word);
 double avWordLens(dictEntry_t dict[], int dict_len);
 void printList(list_t *list);
 int compWords(const void* a, const void* b);
-void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence);
+void printPossible(list_t *sentence);
 void printNameDes(sentEnt_t *target);
 void assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence);
 void zeroUnlikely(list_t *sentence);
@@ -121,8 +127,9 @@ main(int argc, char *argv[]) {
 	/*STAGE 2 */
 	printStage(2);
 	printf("Number of names: %d\n", dictSize);
-	printf("Average number of characters per name: %.2f \n\n", 
+	printf("Average number of characters per name: %.2f \n", 
 			avWordLens(dict, dictSize));
+	printf("\n");
 
 	/*STAGE 3 */
 	printStage(3);
@@ -133,14 +140,14 @@ main(int argc, char *argv[]) {
 	printStage(4);
 	assignProbsToSent(dict, dictSize, sentence);
 
-	printPossible(dict, dictSize, sentence);
+	printPossible(sentence);
 	printf("\n");
 
 	/*STAGE 5 */
 	printStage(5);
 
 	zeroUnlikely(sentence);
-	printPossible(dict, dictSize, sentence);
+	printPossible(sentence);
 
 
 	return 0;
@@ -169,13 +176,16 @@ void zeroUnlikely(list_t *sentence) {
 			if ((current->prob)[i] > currHi) {
 				currHi = (current->prob)[i];
 				currHiInd = i;
-			}
+			} 
 		}
 
 		for (i=0; i< NUM_PROBS; i++) {
 			if (i!= currHiInd) {
 				(current->prob)[i] = 0;
-			} 
+			} else {
+				(current->prob)[i] = 100;
+
+			}
 		}
 		current = current->next;
 	}
@@ -210,9 +220,9 @@ assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence) {
 
 /*setProbs to values*/
 void setProb(probList_t dest, int fn, int ln, int nn) { 
-	dest[0] = fn;
-	dest[1] = ln;
-	dest[2] = nn;
+	dest[FN_IND] = fn;
+	dest[LN_IND] = ln;
+	dest[NN_IND] = nn;
 }
 
 
@@ -227,7 +237,7 @@ void copyProbs(probList_t dest, const probList_t src) {
 
 
 
-void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence) {
+void printPossible(list_t *sentence) {
 	node_t *current = sentence->head;
 		
 
@@ -257,13 +267,7 @@ printNameDes(sentEnt_t *target) {
 	int i;
 	int first = 1;
 	int printLast = 1;
-	char *probStrings[3] = {"FIRST_NAME", "LAST_NAME", "NOT_NAME"};
-
-	if (target==NULL) {
-		printf("%s", probStrings[2]);
-		return;
-	}
-
+	char *probStrings[3] = {FN_STR, LN_STR, NN_STR};
 
 	for (i=0; i<NUM_PROBS; i++) {
 		if (target->prob[i] ) {
