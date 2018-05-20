@@ -127,7 +127,7 @@ main(int argc, char *argv[]) {
 	/*STAGE 2 */
 	printStage(2);
 	printf("Number of names: %d\n", dictSize);
-	printf("Average number of characters per name: %.2f \n", 
+	printf("Average number of characters per name: %.2f\n", 
 			avWordLens(dict, dictSize));
 	printf("\n");
 
