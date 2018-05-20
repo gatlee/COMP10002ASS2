@@ -37,10 +37,15 @@
 
 typedef char word_t[NAME_MAX];
 
+typedef int probList_t[NUM_PROBS];
+
+
 typedef struct {
 	word_t name;
-	int  prob[NUM_PROBS];
+	probList_t prob;
 } dictEntry_t;
+
+
 
 typedef word_t rawEntry_t[NUM_PARAM];
 
@@ -50,15 +55,19 @@ typedef word_t rawEntry_t[NUM_PARAM];
 
 typedef struct node node_t;
 typedef word_t data_t;
+
 struct node {
 	data_t data;
 	node_t *next;
+	probList_t prob;
 };
 
 typedef struct {
 	node_t *head;
 	node_t *foot;
 } list_t;
+
+typedef node_t sentEnt_t;
 
 
 
@@ -71,7 +80,7 @@ int getWord(char W[], int limit);
 int isValid (char c);
 void assignDictEntry(dictEntry_t *entry, rawEntry_t raw);
 void fillDict(dictEntry_t dict[], int* dictLen);
-void printDictAll(dictEntry_t dict[], int* dictLen);
+void printDictAll(dictEntry_t dict[], int* dictLen);/*TODO: probs remove?*/
 void printDictOne(dictEntry_t dict[]);
 void printStage(int num);
 int wordLen(word_t word);
@@ -79,9 +88,15 @@ double avWordLens(dictEntry_t dict[], int dict_len);
 void printList(list_t *list);
 int compWords(const void* a, const void* b);
 void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence);
-void printNameDes(dictEntry_t *target);
+void printNameDes(sentEnt_t *target);
+void assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence);
 
-/*listops*/
+/*prob operations */
+
+void copyProbs(probList_t dest, const probList_t src);
+void setProb(probList_t dest, int fn, int ln, int nn);
+
+/*listops funcs*/
 list_t *genSentenceList();
 list_t *make_empty_list(void);
 list_t *insert_at_foot(list_t *list, data_t value);
@@ -114,47 +129,90 @@ main(int argc, char *argv[]) {
 
 	/*STAGE 4 */
 	printStage(4);
+	assignProbsToSent(dict, dictSize, sentence);
+
 	printPossible(dict, dictSize, sentence);
 
-
-
-
+	/*STAGE 5 */
+	printStage(5);
 
 
 	return 0;
 
 }
 
-/* assigns either FIRST_NAME LAST_NAME or NOT_NAME based whether value is non
- * zero
- * TODO: pass through sentence length
+/* Input: sentence, dict
+ * Assigns each prob in each sentence node to corresponding dict probability
+ *
+ *
  * */
-void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence) {
-	node_t *current = sentence->head;
+void 
+assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence) {
+
+	sentEnt_t *current = sentence->head;
 	dictEntry_t *target;
 		
 
 	while (current) {
-
-		printf("%-10s", current->data);
-		/*assign target to pointer to corresponding dictEntry_t */
 		target = bsearch((void*)current, dict, dictSize, sizeof(dictEntry_t), 
 				         compWords);
 
-		printNameDes(target);
+		if (target!=NULL) {
+			copyProbs(current->prob, target->prob);
+		} else {
+			setProb(current->prob, 0, 0, 100);
+		}
+		current = current->next;
+	}
+}
+
+
+/*setProbs to values*/
+void setProb(probList_t dest, int fn, int ln, int nn) { 
+	dest[0] = fn;
+	dest[1] = ln;
+	dest[2] = nn;
+}
+
+
+/*copy values of problist_t from src to dest*/
+void copyProbs(probList_t dest, const probList_t src) {
+	int i;
+	for (i=0; i<NUM_PROBS; i++) {
+		dest[i] = src[i];
+	}
+
+}
+
+
+
+void printPossible(dictEntry_t dict [], int dictSize, list_t *sentence) {
+	node_t *current = sentence->head;
+		
+
+	while (current) {
+
+		printf("%-32s", current->data);
+		/*assign target to pointer to corresponding dictEntry_t */
+
+		printNameDes(current);
 		printf("\n");
 
 		current = current->next;
 	}
+	printf("\n");
 
 }
+
+
+
 
 
 /* given a dict entry, print out all non zero percentage chance NAME values
  * ie. FIRST_NAME, LAST_NAME for a dictEntry_t with prob array [50, 50, 0]
  * */
 void 
-printNameDes(dictEntry_t *target) {
+printNameDes(sentEnt_t *target) {
 
 	int i;
 	int first = 1;
@@ -169,14 +227,14 @@ printNameDes(dictEntry_t *target) {
 
 	for (i=0; i<NUM_PROBS; i++) {
 		if (target->prob[i] ) {
-			/*first item has different formatting*/
 			/*TODO: Kinda janky looking?*/
-			if (i != NUM_PROBS -1 || printLast) {
+			/*Only prints NOT_NAME if nothing has been printed yet*/
+			if (i != NN_IND || printLast) {
+				/*first item needs different formatting */
 				if (first) {
 					printf("%s", probStrings[i]);
 					first = 0;
-				}
-				else {
+				} else {
 					printf(", %s", probStrings[i]);
 
 				}
