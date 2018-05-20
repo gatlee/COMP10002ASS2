@@ -34,7 +34,7 @@
 #define DICT_END	'%'
 #define NUM_PARAM	4
 #define NUM_PROBS	3
-#define PROB_STR	
+#define NONE		(-1)
 
 #define FN_STR		"FIRST_NAME" 	
 #define LN_STR		"LAST_NAME" 	
@@ -96,12 +96,14 @@ int compWords(const void* a, const void* b);
 void printPossible(list_t *sentence);
 void printNameDes(sentEnt_t *target);
 void assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence);
-void zeroUnlikely(list_t *sentence);
+void evalProbsToHighest(list_t *sentence);
 
 /*prob operations */
 
 void copyProbs(probList_t dest, const probList_t src);
 void setProb(probList_t dest, int fn, int ln, int nn);
+void pruneProbs(list_t *sentence);
+int getOnlyPossible(sentEnt_t *sentEnt);
 
 /*listops funcs*/
 list_t *genSentenceList();
@@ -146,7 +148,8 @@ main(int argc, char *argv[]) {
 	/*STAGE 5 */
 	printStage(5);
 
-	zeroUnlikely(sentence);
+	pruneProbs(sentence);
+	evalProbsToHighest(sentence);
 	printPossible(sentence);
 
 
@@ -154,10 +157,63 @@ main(int argc, char *argv[]) {
 
 }
 
+void pruneProbs(list_t *sentence) {
+	sentEnt_t *current = sentence->head;
+	sentEnt_t *prev = NULL;
+	
+	while (current) {
+
+		if (getOnlyPossible(current) != NONE) {
+			/*Already certain of these probabilities so move on*/
+		}
+
+		else {
+			if (prev != NULL && getOnlyPossible(prev) == FN_IND) {
+				(current->prob)[FN_IND] -= 99;
+			}
+			if (current->next != NULL && 
+				getOnlyPossible(current->next) == LN_IND) {
+				(current->prob)[LN_IND] -= 99;
+			}
+		}
+
+
+
+		prev = current;
+		current = current->next;
+
+	}
+	
+}
+
+
+/*given a sentence entry, return true if only 1 probability is non-zero*/
+int getOnlyPossible(sentEnt_t *sentEnt) {
+	int i;
+	int total=0;
+	int index;
+	/*count up number of probabilities*/
+	for (i=0; i< NUM_PROBS; i++) {
+		if ((sentEnt->prob)[i]) {
+			total++;
+			index = i;
+		}
+	}
+	
+	if (total == 1) {
+		return index;
+	} else if (total < 1) {
+		return NONE;
+		printf("THIS ISN'T MEANT TO HAPPEN!!!");
+	} else {
+		return NONE;
+	}
+}
+
 
 /*given a sentence, set all probList array values to 0 except for largest
  * value in list*/
-void zeroUnlikely(list_t *sentence) {
+void evalProbsToHighest(list_t *sentence) {
 
 
 	sentEnt_t *current = sentence->head;
