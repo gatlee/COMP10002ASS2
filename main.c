@@ -1,7 +1,4 @@
-/* COMP10002 Assessment 2
- * By Gatlee Kaw (994017) created 2018-05-01, Last modified 2018-05-06
- * Project which identifies and labels a sentence with first_name or
- * last_name based on data in given dictionary
+/* C based on data in given dictionary
  * Algorithms are fun!
 */
 
@@ -34,7 +31,7 @@
 #define DICT_END	'%'
 #define NUM_PARAM	4
 #define NUM_PROBS	3
-#define NONE		(-1)
+#define UNKNOWN		(-1)
 
 #define FN_STR		"FIRST_NAME" 	
 #define LN_STR		"LAST_NAME" 	
@@ -93,17 +90,19 @@ int wordLen(word_t word);
 double avWordLens(dictEntry_t dict[], int dict_len);
 void printList(list_t *list);
 int compWords(const void* a, const void* b);
-void printPossible(list_t *sentence);
-void printNameDes(sentEnt_t *target);
+void printPossibleIdents(list_t *sentence);
 void assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence);
 void evalProbsToHighest(list_t *sentence);
-
+int elimIdentsFromPrev(sentEnt_t *current, sentEnt_t *prev);
+int elimIdentsFromNext(sentEnt_t *current, sentEnt_t *next);
+void incProb(probList_t probs, int index);
+void decProb(probList_t probs, int index);
 /*prob operations */
 
 void copyProbs(probList_t dest, const probList_t src);
 void setProb(probList_t dest, int fn, int ln, int nn);
 void pruneProbs(list_t *sentence);
-int getOnlyPossible(sentEnt_t *sentEnt);
+int guaranteedIdent(sentEnt_t *sentEnt);
 
 /*listops funcs*/
 list_t *genSentenceList();
@@ -142,7 +141,7 @@ main(int argc, char *argv[]) {
 	printStage(4);
 	assignProbsToSent(dict, dictSize, sentence);
 
-	printPossible(sentence);
+	printPossibleIdents(sentence);
 	printf("\n");
 
 	/*STAGE 5 */
@@ -150,51 +149,149 @@ main(int argc, char *argv[]) {
 
 	pruneProbs(sentence);
 	evalProbsToHighest(sentence);
-	printPossible(sentence);
+	printPossibleIdents(sentence);
 
+
+	/*Finally free the list*/
+	free_list(sentence);
 
 	return 0;
 
 }
 
+
+/*increases probability at index only if probability is above 0 */
+void
+incProb(probList_t probs, int index) {
+	if (probs[index] > 0) {
+		probs[index] += 100;
+	}
+}
+
+/*just eliminate the possibility fam*/
+void
+decProb(probList_t probs, int index) {
+	probs[index] = 0;
+}
+/*
+ *
+ * return: true if current has changed from unknown to known, false if already
+ * known or still unknown after
+ * */
+int elimIdentsFromPrev(sentEnt_t *current, sentEnt_t *prev) {
+	int currIdentity = guaranteedIdent(current);
+	int prevIdentity = guaranteedIdent(prev);
+
+	/*current identity already known so no action required/no change*/
+	if (currIdentity!=UNKNOWN) {
+		return 0;
+	}
+	/*eliminate possible identities for curr based on prev identity if prev 
+	  guaranteed*/
+	if (prevIdentity == FN_IND) {
+		incProb(current->prob, LN_IND);
+		decProb(current->prob, FN_IND);
+	}
+	if (prevIdentity == LN_IND) {
+		incProb(current->prob, NN_IND);
+		decProb(current->prob, LN_IND);
+	}
+	if (prevIdentity == NN_IND) {
+		decProb(current->prob, LN_IND);
+	}
+
+	/*update identity*/
+	currIdentity = guaranteedIdent(current);
+	if (currIdentity == UNKNOWN) {
+		return 0;
+	} else {
+		/*finally a change in it's guaranteed identity! */
+		return 1;
+	}
+
+
+
+
+
+}
+/**/
+int elimIdentsFromNext(sentEnt_t *current, sentEnt_t *next) {
+	int nextIdentity = guaranteedIdent(next);
+	int currIdentity = guaranteedIdent(current);
+	
+	/*current identity already known so no action required/no change*/
+	if (currIdentity != UNKNOWN) {
+		return 0;
+	}
+
+	/*eliminate possibilities again */
+	if (nextIdentity == FN_IND) {
+		incProb(current->prob, LN_IND);
+		decProb(current->prob, FN_IND);
+	}
+	if (nextIdentity == LN_IND) {
+		incProb(current->prob, FN_IND);
+		decProb(current->prob, LN_IND);
+		
+	}
+	if (nextIdentity == NN_IND) {
+		;
+	}
+
+	/*update identity*/
+	currIdentity = guaranteedIdent(current);
+
+	if (currIdentity == UNKNOWN) {
+		return 0;
+	} else {
+		/*finally a change in it's guaranteed identity! */
+		return 1;
+	}
+}
+
+/* Reduces prob in each sentEnt_t based on the probabilites of the next and 
+ * previous values. 
+ * Only makes adjustments if previous or next have no other possibilites
+ * */
+
 void pruneProbs(list_t *sentence) {
 	sentEnt_t *current = sentence->head;
 	sentEnt_t *prev = NULL;
-	
-	while (current) {
+	int changed;
+	while (changed) {
+		changed = 0;
+		while (current) {
+			if (prev != NULL && guaranteedIdent(current) == UNKNOWN) {
 
-		if (getOnlyPossible(current) != NONE) {
-			/*Already certain of these probabilities so move on*/
-		}
-
-		else {
-			if (prev != NULL && getOnlyPossible(prev) == FN_IND) {
-				(current->prob)[FN_IND] -= 99;
+				changed += elimIdentsFromPrev(current, prev);
+					
 			}
-			if (current->next != NULL && 
-				getOnlyPossible(current->next) == LN_IND) {
-				(current->prob)[LN_IND] -= 99;
+			if (current->next != NULL && guaranteedIdent(current) == UNKNOWN) {
+				changed += elimIdentsFromNext(current, current->next);
 			}
+
+
+
+			prev = current;
+			current = current->next;
+
 		}
-
-
-
-		prev = current;
-		current = current->next;
 
 	}
 	
 }
 
 
-/*given a sentence entry, return true if only 1 probability is non-zero*/
-int getOnlyPossible(sentEnt_t *sentEnt) {
+/*given a sentence entry, returns index of it's guaranteed identity
+ *returns UNKNOWN if it doesn't exist
+ * */
+int guaranteedIdent(sentEnt_t *sentEnt) {
 	int i;
 	int total=0;
 	int index;
 	/*count up number of probabilities*/
 	for (i=0; i< NUM_PROBS; i++) {
-		if ((sentEnt->prob)[i]) {
+		if ((sentEnt->prob)[i] > 0) {
 			total++;
 			index = i;
 		}
@@ -203,10 +300,10 @@ int getOnlyPossible(sentEnt_t *sentEnt) {
 	if (total == 1) {
 		return index;
 	} else if (total < 1) {
-		return NONE;
+		return UNKNOWN;
 		printf("THIS ISN'T MEANT TO HAPPEN!!!");
 	} else {
-		return NONE;
+		return UNKNOWN;
 	}
 }
 
@@ -293,16 +390,42 @@ void copyProbs(probList_t dest, const probList_t src) {
 
 
 
-void printPossible(list_t *sentence) {
+/* 
+ *
+ * */
+void printPossibleIdents(list_t *sentence) {
 	node_t *current = sentence->head;
-		
+	
+	int i;
+	int first = 1;
+	int printLast = 1;
+	char *probStrings[3] = {FN_STR, LN_STR, NN_STR};
 
 	while (current) {
 
 		printf("%-32s", current->data);
 		/*assign target to pointer to corresponding dictEntry_t */
+		first = 1;
+		printLast = 1;
+		for (i=0; i<NUM_PROBS; i++) {
+			if (current->prob[i] > 0) {
+				/*Only prints NOT_NAME if nothing has been printed yet*/
+				if (i != NN_IND || printLast) {
 
-		printNameDes(current);
+					/*first item needs different formatting */
+					if (first) {
+						printf("%s", probStrings[i]);
+						first = 0;
+
+					} else {
+						printf(", %s", probStrings[i]);
+
+					}
+					printLast = 0;
+				}
+			}
+		}
+
 		printf("\n");
 
 		current = current->next;
@@ -314,36 +437,6 @@ void printPossible(list_t *sentence) {
 
 
 
-/* given a dict entry, print out all non zero percentage chance NAME values
- * ie. FIRST_NAME, LAST_NAME for a dictEntry_t with prob array [50, 50, 0]
- * */
-void 
-printNameDes(sentEnt_t *target) {
-
-	int i;
-	int first = 1;
-	int printLast = 1;
-	char *probStrings[3] = {FN_STR, LN_STR, NN_STR};
-
-	for (i=0; i<NUM_PROBS; i++) {
-		if (target->prob[i] ) {
-			/*TODO: Kinda janky looking?*/
-			/*Only prints NOT_NAME if nothing has been printed yet*/
-			if (i != NN_IND || printLast) {
-				/*first item needs different formatting */
-				if (first) {
-					printf("%s", probStrings[i]);
-					first = 0;
-				} else {
-					printf(", %s", probStrings[i]);
-
-				}
-				printLast = 0;
-			}
-		}
-	}
-
-}
 
 
 
@@ -363,9 +456,10 @@ int compWords(const void* a, const void* b) {
 
 
 
-void printList(list_t *list) {
+/*prints list*/
+void printList(list_t *sentence) {
 
-	node_t *current = list->head;
+	node_t *current = sentence->head;
 	while (current) {
 		printf("%s\n", current->data);
 		current = current->next;
@@ -374,22 +468,18 @@ void printList(list_t *list) {
 
 }
 
+/*creates the sentence list and returns pointer to it*/
 list_t
 *genSentenceList() {
 	list_t *sentence;
 	sentence = make_empty_list();
 
 	word_t inpWord;
-	int length = 0;
 	while (getWord(inpWord, NAME_MAX) != EOF) {
 		sentence = insert_at_foot(sentence, inpWord);
-		length++;
-		/*TODO: make a legnth function*/
 	}
 
 	
-
-
 	return sentence;
 
 }
@@ -471,6 +561,7 @@ void fillDict(dictEntry_t dict[], int* dictLen) {
 	rawEntry_t rawEntry;
 	int rawEntryPos = 0;
 	int currEntry=0;
+	/*TODO: comment*/
 	while (getWord(currInpWord,NAME_MAX)!= EOF &&  currInpWord[0] != DICT_END) {
 		strcpy(rawEntry[rawEntryPos], currInpWord);
 
