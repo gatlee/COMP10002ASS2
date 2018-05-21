@@ -1,4 +1,9 @@
 /* C based on data in given dictionary
+ * Created by: Gatlee Kaw (994017)
+ *
+ * First Created: 2018-05-01
+ * Last Modified: 2018-05-21
+ *
  * Algorithms are fun!
 */
 
@@ -36,6 +41,7 @@
 #define FN_STR		"FIRST_NAME" 	
 #define LN_STR		"LAST_NAME" 	
 #define NN_STR		"NOT_NAME" 	
+#define DIV_STR		"========================="
 
 	
 typedef char word_t[NAME_MAX];
@@ -93,18 +99,18 @@ int compWords(const void* a, const void* b);
 void printPossibleIdents(list_t *sentence);
 void assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence);
 void evalProbsToHighest(list_t *sentence);
-int elimIdentsFromPrev(sentEnt_t *current, sentEnt_t *prev);
-int elimIdentsFromNext(sentEnt_t *current, sentEnt_t *next);
+int elimBasedOnPrev(sentEnt_t *current, sentEnt_t *prev);
+int elimBasedOnNext(sentEnt_t *current, sentEnt_t *next);
 void incProb(probList_t probs, int index);
 void decProb(probList_t probs, int index);
 /*prob operations */
 
 void copyProbs(probList_t dest, const probList_t src);
-void setProb(probList_t dest, int fn, int ln, int nn);
+void setProbToNN(probList_t dest);
 void pruneProbs(list_t *sentence);
 int guaranteedIdent(sentEnt_t *sentEnt);
 
-/*listops funcs*/
+/*listops funcs (credits Alistair Moffat)*/
 list_t *genSentenceList();
 list_t *make_empty_list(void);
 list_t *insert_at_foot(list_t *list, data_t value);
@@ -173,12 +179,16 @@ void
 decProb(probList_t probs, int index) {
 	probs[index] = 0;
 }
-/*
+
+
+
+/* Eliminates possibile current identities based on previous word 
+ * Only makes adjustments if previous or next's identities are guaranteed
  *
- * return: true if current has changed from unknown to known, false if already
- * known or still unknown after
+ * Returns: 1 if identity changed from unkown to known. 0 in all other cases
+ *
  * */
-int elimIdentsFromPrev(sentEnt_t *current, sentEnt_t *prev) {
+int elimBasedOnPrev(sentEnt_t *current, sentEnt_t *prev) {
 	int currIdentity = guaranteedIdent(current);
 	int prevIdentity = guaranteedIdent(prev);
 
@@ -214,8 +224,14 @@ int elimIdentsFromPrev(sentEnt_t *current, sentEnt_t *prev) {
 
 
 }
-/**/
-int elimIdentsFromNext(sentEnt_t *current, sentEnt_t *next) {
+
+/* Eliminates possibile current identities based on the word in front of it
+ * Only makes adjustments if previous or next's identities are guaranteed
+ *
+ * Returns: 1 if identity changed from unkown to known. 0 in all other cases
+ *
+ * */
+int elimBasedOnNext(sentEnt_t *current, sentEnt_t *next) {
 	int nextIdentity = guaranteedIdent(next);
 	int currIdentity = guaranteedIdent(current);
 	
@@ -249,11 +265,12 @@ int elimIdentsFromNext(sentEnt_t *current, sentEnt_t *next) {
 	}
 }
 
+
+
 /* Reduces prob in each sentEnt_t based on the probabilites of the next and 
  * previous values. 
- * Only makes adjustments if previous or next have no other possibilites
+ * Only adjust values which don't yet have a guaranteed value 
  * */
-
 void pruneProbs(list_t *sentence) {
 	sentEnt_t *current = sentence->head;
 	sentEnt_t *prev = NULL;
@@ -263,11 +280,11 @@ void pruneProbs(list_t *sentence) {
 		while (current) {
 			if (prev != NULL && guaranteedIdent(current) == UNKNOWN) {
 
-				changed += elimIdentsFromPrev(current, prev);
+				changed += elimBasedOnPrev(current, prev);
 					
 			}
 			if (current->next != NULL && guaranteedIdent(current) == UNKNOWN) {
-				changed += elimIdentsFromNext(current, current->next);
+				changed += elimBasedOnNext(current, current->next);
 			}
 
 
@@ -299,11 +316,10 @@ int guaranteedIdent(sentEnt_t *sentEnt) {
 	
 	if (total == 1) {
 		return index;
-	} else if (total < 1) {
-		return UNKNOWN;
-		printf("THIS ISN'T MEANT TO HAPPEN!!!");
+
 	} else {
 		return UNKNOWN;
+
 	}
 }
 
@@ -314,7 +330,6 @@ void evalProbsToHighest(list_t *sentence) {
 
 
 	sentEnt_t *current = sentence->head;
-	/*init search values*/
 	int currHi=0;
 	int i;
 	int currHiInd = 0;
@@ -332,6 +347,7 @@ void evalProbsToHighest(list_t *sentence) {
 			} 
 		}
 
+		/*sets probability of smaller ones to 0 so it won't get printed*/
 		for (i=0; i< NUM_PROBS; i++) {
 			if (i!= currHiInd) {
 				(current->prob)[i] = 0;
@@ -346,9 +362,9 @@ void evalProbsToHighest(list_t *sentence) {
 }
 
 /* Input: sentence, dict
- * Assigns each prob in each sentence node to corresponding dict probability
- *
- *
+ * Gives each sentence node its own copy of corresponding dict probability or
+ * if it is not in dict. Give it 100% chance of being not a name.
+ * 
  * */
 void 
 assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence) {
@@ -364,7 +380,8 @@ assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence) {
 		if (target!=NULL) {
 			copyProbs(current->prob, target->prob);
 		} else {
-			setProb(current->prob, 0, 0, 100);
+			setProbToNN(current->prob);
+				
 		}
 		current = current->next;
 	}
@@ -372,10 +389,10 @@ assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence) {
 
 
 /*setProbs to values*/
-void setProb(probList_t dest, int fn, int ln, int nn) { 
-	dest[FN_IND] = fn;
-	dest[LN_IND] = ln;
-	dest[NN_IND] = nn;
+void setProbToNN(probList_t dest) { 
+	dest[FN_IND] = 0;
+	dest[LN_IND] = 0;
+	dest[NN_IND] = 100;
 }
 
 
@@ -524,7 +541,7 @@ list_t
 }
 
 /* makes empty list
- * Credits: Alistair Moffat
+ * Credits: Alistair Moffat (See top of file for more information)
  *
  */
 list_t
@@ -552,10 +569,13 @@ double avWordLens(dictEntry_t dict[], int dict_len) {
 void printStage(int num) {
 
 	char numC = num+'0';
-	printf("=========================Stage %c=========================\n", numC);
-
+	printf("%s", DIV_STR);
+	printf("Stage %c", numC);
+	printf("%s\n", DIV_STR);
 
 }
+
+
 void fillDict(dictEntry_t dict[], int* dictLen) {
 	word_t currInpWord;
 	rawEntry_t rawEntry;
@@ -636,6 +656,7 @@ int wordLen(word_t word) {
    more than limit characters. Argument array W must be
    limit+1 characters or bigger.
    Credit: Alistair Moffat (See top of file for additional info)
+
    Modified by Gatlee Kaw (accepts words comprising of digits)
 
 */
