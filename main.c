@@ -205,6 +205,7 @@ int elimBasedOnPrev(sentEnt_t *current, sentEnt_t *prev) {
 	if (prevIdentity == LN_IND) {
 		incProb(current->prob, NN_IND);
 		decProb(current->prob, LN_IND);
+
 	}
 	if (prevIdentity == NN_IND) {
 		decProb(current->prob, LN_IND);
@@ -248,6 +249,7 @@ int elimBasedOnNext(sentEnt_t *current, sentEnt_t *next) {
 	if (nextIdentity == LN_IND) {
 		incProb(current->prob, FN_IND);
 		decProb(current->prob, LN_IND);
+		decProb(current->prob, NN_IND);
 		
 	}
 	if (nextIdentity == NN_IND) {
@@ -256,7 +258,6 @@ int elimBasedOnNext(sentEnt_t *current, sentEnt_t *next) {
 
 	/*update identity*/
 	currIdentity = guaranteedIdent(current);
-
 	if (currIdentity == UNKNOWN) {
 		return 0;
 	} else {
@@ -277,6 +278,7 @@ void pruneProbs(list_t *sentence) {
 	int changed;
 	while (changed) {
 		changed = 0;
+		current = sentence->head;
 		while (current) {
 			if (prev != NULL && guaranteedIdent(current) == UNKNOWN) {
 
@@ -293,6 +295,7 @@ void pruneProbs(list_t *sentence) {
 			current = current->next;
 
 		}
+		
 
 	}
 	
