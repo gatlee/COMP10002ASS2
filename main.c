@@ -21,40 +21,38 @@
    Prepared December 2012 for the Revised Edition.
    ================================================================== */
 
+/*=============== INCLUDES =============== */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
-/*#include "listops.c"i*/
 
+/*=============== CONSTANT DEFINITIONS  =============== */
 #define FN_IND      0
 #define LN_IND      1
 #define NN_IND      2
+#define UNKNOWN		(-1)
+
 #define NAME_MAX	30
 #define DICT_MAX	100
 #define DICT_END	'%'
 #define NUM_PARAM	4
 #define NUM_PROBS	3
-#define UNKNOWN		(-1)
 
 #define FN_STR		"FIRST_NAME" 	
 #define LN_STR		"LAST_NAME" 	
 #define NN_STR		"NOT_NAME" 	
 #define DIV_STR		"========================="
 
+/*=============== TYPEDEFS  =============== */
 	
 typedef char word_t[NAME_MAX];
-
 typedef int probList_t[NUM_PROBS];
-
-
 typedef struct {
 	word_t name;
 	probList_t prob;
 } dictEntry_t;
-
-
 
 typedef word_t rawEntry_t[NUM_PARAM];
 
@@ -78,29 +76,27 @@ typedef struct {
 
 typedef node_t sentEnt_t;
 
-
-
-
-
-
-/*function declarations */
+/*===============  FUNCTION DECLARATIONS  =============== */
 
 int getWord(char W[], int limit);
 int isValid (char c);
 void assignDictEntry(dictEntry_t *entry, rawEntry_t raw);
 void fillDict(dictEntry_t dict[], int* dictLen);
-void printDictAll(dictEntry_t dict[], int* dictLen);/*TODO: probs remove?*/
-void printDictOne(dictEntry_t dict[]);
+
+void printDictEntry(dictEntry_t dict[]);
+void printList(list_t *list);
+
 void printStage(int num);
 int wordLen(word_t word);
-double avWordLens(dictEntry_t dict[], int dict_len);
-void printList(list_t *list);
+double avWordLen(dictEntry_t dict[], int dict_len);
 int compWords(const void* a, const void* b);
 void printPossibleIdents(list_t *sentence);
-void assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence);
-void evalProbsToHighest(list_t *sentence);
+void assignIdentsToSent(dictEntry_t dict [], int dictSize, list_t *sentence);
+
 int elimBasedOnPrev(sentEnt_t *current, sentEnt_t *prev);
 int elimBasedOnNext(sentEnt_t *current, sentEnt_t *next);
+void evalProbsToHighest(list_t *sentence);
+
 void incProb(probList_t probs, int index);
 void decProb(probList_t probs, int index);
 /*prob operations */
@@ -116,10 +112,8 @@ list_t *make_empty_list(void);
 list_t *insert_at_foot(list_t *list, data_t value);
 void free_list(list_t *list);
 
-/*Debug function*/
-void printEntry(rawEntry_t raw);
 
-/***********MAIN**********/
+/*===============  MAIN  =============== */
 int
 main(int argc, char *argv[]) {
 	dictEntry_t dict[DICT_MAX];
@@ -128,14 +122,14 @@ main(int argc, char *argv[]) {
 
 	/*STAGE 1 */
 	printStage(1);
-	printDictOne(dict);
+	printDictEntry(dict);
 
 
 	/*STAGE 2 */
 	printStage(2);
 	printf("Number of names: %d\n", dictSize);
 	printf("Average number of characters per name: %.2f\n", 
-			avWordLens(dict, dictSize));
+			avWordLen(dict, dictSize));
 	printf("\n");
 
 	/*STAGE 3 */
@@ -145,22 +139,22 @@ main(int argc, char *argv[]) {
 
 	/*STAGE 4 */
 	printStage(4);
-	assignProbsToSent(dict, dictSize, sentence);
+	assignIdentsToSent(dict, dictSize, sentence);
 
 	printPossibleIdents(sentence);
 	printf("\n");
 
 	/*STAGE 5 */
 	printStage(5);
-
+	/*try to remove impossibilities*/
 	pruneProbs(sentence);
+	/*after that, just resort to highest*/
 	evalProbsToHighest(sentence);
 	printPossibleIdents(sentence);
 
 
 	/*Finally free the list*/
 	free_list(sentence);
-
 	return 0;
 
 }
@@ -179,7 +173,6 @@ void
 decProb(probList_t probs, int index) {
 	probs[index] = 0;
 }
-
 
 
 /* Eliminates possibile current identities based on previous word 
@@ -242,6 +235,7 @@ int elimBasedOnNext(sentEnt_t *current, sentEnt_t *next) {
 	}
 
 	/*eliminate possibilities again */
+	/*heuristics here can be tweaked as needed*/
 	if (nextIdentity == FN_IND) {
 		incProb(current->prob, LN_IND);
 		decProb(current->prob, FN_IND);
@@ -251,9 +245,6 @@ int elimBasedOnNext(sentEnt_t *current, sentEnt_t *next) {
 		decProb(current->prob, LN_IND);
 		decProb(current->prob, NN_IND);
 		
-	}
-	if (nextIdentity == NN_IND) {
-		;
 	}
 
 	/*update identity*/
@@ -269,34 +260,33 @@ int elimBasedOnNext(sentEnt_t *current, sentEnt_t *next) {
 
 
 /* Reduces prob in each sentEnt_t based on the probabilites of the next and 
- * previous values. 
+ * previous values only if those values are guaranteed to be FN LN or NN
  * Only adjust values which don't yet have a guaranteed value 
  * */
 void pruneProbs(list_t *sentence) {
 	sentEnt_t *current = sentence->head;
 	sentEnt_t *prev = NULL;
 	int changed;
+
+	/*only keep going if something went from uncertain to certain. to avoid
+	 *infinitely looping*/
 	while (changed) {
 		changed = 0;
 		current = sentence->head;
+
 		while (current) {
 			if (prev != NULL && guaranteedIdent(current) == UNKNOWN) {
-
 				changed += elimBasedOnPrev(current, prev);
 					
 			}
 			if (current->next != NULL && guaranteedIdent(current) == UNKNOWN) {
 				changed += elimBasedOnNext(current, current->next);
+
 			}
-
-
 
 			prev = current;
 			current = current->next;
-
 		}
-		
-
 	}
 	
 }
@@ -341,7 +331,7 @@ void evalProbsToHighest(list_t *sentence) {
 	 *valued one */
 
 	while (current) {
-		/*sets currHiInd to highest valued probability in problist*/
+		/*search for highest probability index*/
 		currHi=0;
 		for (i=0; i< NUM_PROBS; i++) {
 			if ((current->prob)[i] > currHi) {
@@ -370,7 +360,7 @@ void evalProbsToHighest(list_t *sentence) {
  * 
  * */
 void 
-assignProbsToSent(dictEntry_t dict [], int dictSize, list_t *sentence) {
+assignIdentsToSent(dictEntry_t dict [], int dictSize, list_t *sentence) {
 
 	sentEnt_t *current = sentence->head;
 	dictEntry_t *target;
@@ -410,7 +400,8 @@ void copyProbs(probList_t dest, const probList_t src) {
 
 
 
-/* 
+/* Prints word followed by possible identities of the name.
+ * Doesn't print if probability is < 0
  *
  * */
 void printPossibleIdents(list_t *sentence) {
@@ -427,45 +418,44 @@ void printPossibleIdents(list_t *sentence) {
 		/*assign target to pointer to corresponding dictEntry_t */
 		first = 1;
 		printLast = 1;
+		/*goes through all and prints expected output*/
+
 		for (i=0; i<NUM_PROBS; i++) {
-			if (current->prob[i] > 0) {
-				/*Only prints NOT_NAME if nothing has been printed yet*/
-				if (i != NN_IND || printLast) {
+			if ((current->prob[i] > 0) && (i != NN_IND || printLast)) {
 
-					/*first item needs different formatting */
-					if (first) {
-						printf("%s", probStrings[i]);
-						first = 0;
-
-					} else {
-						printf(", %s", probStrings[i]);
-
-					}
-					printLast = 0;
+				/*first item doesn't need a comma before it*/
+				if (!first) {
+					printf(", "); 
 				}
+				first = 0;
+				printf("%s", probStrings[i]);
+				printLast = 0;
 			}
 		}
 
 		printf("\n");
-
 		current = current->next;
 	}
 
 }
 
 
+/*printList without left justifying and buffering 25 characters. Needed because
+ *verify program doesn't like having whitespace after each word
+ *in stage 3 output*/
+void printList(list_t *list) {
+	node_t *current = list->head;
 
+	while (current) {
+		printf("%s\n", current->data);
+		current = current->next;
+	}
+	printf("\n");
 
-
-
-
-
-
-
-
+}
 
 /* given two node funcitons
- * returns -ve if a < b, 0 if a = b, and +ve if a > b
+ * returns negative if a < b, 0 if a = b, and +ve if a > b
  * */
 int compWords(const void* a, const void* b) {
 	node_t*  aNode = (node_t*) a;
@@ -474,19 +464,6 @@ int compWords(const void* a, const void* b) {
 	return strcmp(aNode->data , bNode->data);
 }
 
-
-
-/*prints list*/
-void printList(list_t *sentence) {
-
-	node_t *current = sentence->head;
-	while (current) {
-		printf("%s\n", current->data);
-		current = current->next;
-	}
-	printf("\n");
-
-}
 
 /*creates the sentence list and returns pointer to it*/
 list_t
@@ -505,8 +482,7 @@ list_t
 }
 
 /* frees list
- * Credits: Alistair Moffat
- *
+ * Credits: Alistair Moffat (See top of file for more information)
  */
 void
 free_list(list_t *list) {
@@ -523,7 +499,6 @@ free_list(list_t *list) {
 
 /* inserts item at foot at list
  * Credits: Alistair Moffat
- *
  */
 list_t
 *insert_at_foot(list_t *list, data_t value) {
@@ -536,16 +511,17 @@ list_t
 	if (list->foot==NULL) {
 		/* this is the first insertion into the list */
 		list->head = list->foot = new;
+
 	} else {
 		list->foot->next = new;
 		list->foot = new;
+
 	}
 	return list;
 }
 
 /* makes empty list
  * Credits: Alistair Moffat (See top of file for more information)
- *
  */
 list_t
 *make_empty_list(void) {
@@ -556,7 +532,8 @@ list_t
 	return list;
 }
 
-double avWordLens(dictEntry_t dict[], int dict_len) {
+/*gives average word length*/
+double avWordLen(dictEntry_t dict[], int dict_len) {
 	int i = 0;
 	double total = 0.0;
 	for (i=0; i<dict_len; i++) {
@@ -568,7 +545,8 @@ double avWordLens(dictEntry_t dict[], int dict_len) {
 
 }
 
-/*Prints Stage Output*/
+/*Prints Stage Output with DIV_STR on either side of 'Stage <num>'
+ * */
 void printStage(int num) {
 
 	char numC = num+'0';
@@ -579,17 +557,23 @@ void printStage(int num) {
 }
 
 
+/*Given user input from getWord function, copy each of the inputted values
+ * into dict struct to generate dict
+ * */
 void fillDict(dictEntry_t dict[], int* dictLen) {
 	word_t currInpWord;
 	rawEntry_t rawEntry;
 	int rawEntryPos = 0;
 	int currEntry=0;
-	/*TODO: comment*/
 	while (getWord(currInpWord,NAME_MAX)!= EOF &&  currInpWord[0] != DICT_END) {
+
+		/*copies values from input to rawEntry array*/
 		strcpy(rawEntry[rawEntryPos], currInpWord);
 
 
+		/*if last item of entry, start filling next entry in dict*/
 		if (rawEntryPos == 3) {
+			/*finally actually dictEntry in dict proper values from raw entry*/
 			assignDictEntry(&(dict[currEntry]), rawEntry);
 
 			currEntry++;
@@ -601,38 +585,19 @@ void fillDict(dictEntry_t dict[], int* dictLen) {
 
 
 	}
-	/*
-	int i;
-	for (i=0; i<DICT_MAX;i++) {
-		assignDictEntry(&(dict[i]), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 0, 1, 2);
-
-	}
-	*/
-
-}
-void printDictAll(dictEntry_t dict[], int* dictLen) {
-	int i;
-
-	for (i=0; i<*dictLen;i++) {
-		printf("Name %d: %s\n",  i, (dict[i]).name);
-		printf("Label probabilities: %d%% %d%% %d%%\n",
-                (dict[i]).prob[0],(dict[i]).prob[1], (dict[i]).prob[2]);
-	}
-
 }
 
-void printDictOne(dictEntry_t dict[]) {
-	int one = 1;
-	printDictAll(dict, &one);
+/*Prints the first dict entry for output purposes*/
+void printDictEntry(dictEntry_t dict[]) {
+	printf("Name %d: %s\n",  0, (dict[0]).name);
+	printf("Label probabilities: %d%% %d%% %d%%\n",
+			(dict[0]).prob[0],(dict[0]).prob[1], (dict[0]).prob[2]);
+
 	printf("\n");
 }
 
-void printEntry(rawEntry_t raw) {
-  int i;
-	for (i=0; i<4; i++) {
-		printf("%s", raw[i]);
-	}
-}
+/*given the raw entry (array of strings), assign to dictionary with integer
+ * values for probability*/
 
 void assignDictEntry(dictEntry_t *entry, rawEntry_t raw) {
 	strcpy(entry->name, raw[0]);
@@ -650,10 +615,6 @@ int wordLen(word_t word) {
 	}
 	return total;
 }
-
-
-
-
 
 /* Extract a single word (including numbers) out of the standard input, of not
    more than limit characters. Argument array W must be
