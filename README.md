@@ -1,4 +1,4 @@
-# comp10002-ass2
+# COMP10002 Assessment 2
 Assesment 1 of COMP10002 Subject at UoM
 
 ## Notes
