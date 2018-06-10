@@ -1,8 +1,8 @@
 # COMP10002 Assessment 2
 Assesment 1 of COMP10002 Subject at UoM
 
-## Notes
-main.c is main file
+## How to use 
+Compile main.c and feed in dictionary via stdinput
 
 ## What does it do?
 Takes in input (inouts/*) of a probability dictionary and sentence and determines whether the words in the sentence are firstnames or
